@@ -6,7 +6,7 @@
 
 Return information about an IP address.
 
-`
+```
 Get-GNIpInfo -Ip 8.8.8.8
 
 ip             : 8.8.8.8
@@ -18,11 +18,11 @@ link           : https://viz.greynoise.io/riot/8.8.8.8
 last_seen      : 2021-03-26
 message        : Success
 
-`
+```
 
 Return information about your local TCP connections
 
-`
+```
 Get-NetTCPConnection | Where-Object {
    ($_.RemoteAddress -notlike '0.0.0.0') -and
    ($_.RemoteAddress -notlike '127.*') -and
@@ -50,4 +50,4 @@ link           : https://viz.greynoise.io/riot/162.159.130.234
 last_seen      : 2021-03-26
 message        : Success
 
-`
+```
