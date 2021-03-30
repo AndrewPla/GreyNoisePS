@@ -26,8 +26,8 @@ Return information about your local TCP connections
 Get-NetTCPConnection | Where-Object {
    ($_.RemoteAddress -notlike '0.0.0.0') -and
    ($_.RemoteAddress -notlike '127.*') -and
-   ($_.RemoteAddress -notlike '::') } |
-    Sort-Object -Unique |
+   ($_.RemoteAddress -notlike '*::*') } |
+    Sort-Object -Property RemoteAddress -Unique |
 	Get-GNIpInfo
 
 
