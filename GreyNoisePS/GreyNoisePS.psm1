@@ -1,11 +1,11 @@
 function Get-GNIpInfo {
 	<#
 	.Description
-	Returns information for the provided Ips from the greynoise community endpoint.
+	Returns information for the provided Ips from the GreyNoise community endpoint.
 	.Parameter Ip
 	Specify one or many IP addresses that you want to look up
 	.Parameter Key
-	Specify the API key to use. A blank key works for this. See viz.greynoise.io/account/ for API key.
+	Specify the API key to use. A blank key works for this. See https://www.greynoise.io/viz/account/ for API key.
 	.Example
 	>	Get-GNIpInfo -Ip 8.8.8.8 -key $key
 
@@ -15,7 +15,7 @@ function Get-GNIpInfo {
 
 		Returns IP reputation information for all established tcp connections on this computer.
 	.Link
-	https://developer.greynoise.io/reference/community-api#get_v3-community-ip
+	https://docs.greynoise.io/reference/community-api#get_v3-community-ip
 	#>
 	param(
 		[parameter(Mandatory, ValueFromPipelineByPropertyName)]
@@ -26,7 +26,7 @@ function Get-GNIpInfo {
 	process {
 		foreach ($Address in $Ip) {
 			try {
-				$out = Invoke-RestMethod -Uri "https://api.greynoise.io/v3/community/$Address" -Headers @{key = $Key }
+				$out = Invoke-RestMethod -Uri "https://api.greynoise.io/v3/community/$Address" -Headers {'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 				
 				[pscustomobject]@{
 					ip             = $out.ip
@@ -36,7 +36,6 @@ function Get-GNIpInfo {
 					name           = $out.name
 					link           = $out.link
 					last_seen      = $out.last_seen
-					message        = $out.message
 				}
 			} Catch {
 
@@ -66,24 +65,24 @@ function Get-GNIpInfo {
 function Get-GNPing {
 	<#
 	.Description
-	Checks if the GreyNoise API is accessable
+	Checks if the GreyNoise API is accessible and validates API key
 
 	.Parameter Key
 	Specify the API key to use.
 	
 	.Example
 	>	Get-GNPing -Key $key
-	Checks if the greynoise API is accessible using API key $key
+	Checks if the GreyNoise API is accessible using API key $key
 
 	.Link
-	https://developer.greynoise.io/reference/ping-service#get_ping
+	https://docs.greynoise.io/reference/get_ping#get_ping
 	#>
 	[cmdletbinding()]
 	param(
 		[Parameter(Mandatory)]$Key
 	)
 	
-	Invoke-RestMethod -Uri 'https://api.greynoise.io/ping' -Headers @{'User-Agent' = 'API-Reference-Test'; key = $Key}
+	Invoke-RestMethod -Uri 'https://api.greynoise.io/ping' -Headers @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 
 }
 
@@ -102,7 +101,7 @@ function Get-GNMultiIpContext {
 
 	Gets the IP information about the IPs that are returned for reddit.com and microsoft.com.
 	.Link
-	https://developer.greynoise.io/reference/ip-lookup-1
+	https://docs.greynoise.io/reference/multinoisecontextip
 	#>
 	[cmdletbinding()]
 	param(
@@ -117,9 +116,7 @@ function Get-GNMultiIpContext {
 		Method  = 'POST'
 		URI     = "https://api.greynoise.io/v2/noise/multi/context"
 		
-		Headers = @{
-			'key' = $Key
-  }
+		Headers = {'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 		Body    = (@{ips = $Ips.IPAddressToString} | ConvertTo-Json)
 	}
 
@@ -142,7 +139,7 @@ function Get-GNIpContext {
 	returns information about $ip
 	
 	.Link
-	https://developer.greynoise.io/reference/ip-lookup-1#noisecontextip-1
+	https://docs.greynoise.io/reference/noisecontextip-1
 	#>
 	[cmdletbinding()]
 	param(
@@ -160,7 +157,7 @@ function Get-GNIpContext {
 			try {
 				$params = @{
 					Uri     = "https://api.greynoise.io/v2/noise/context/$($address.IPAddressToString)"
-					Headers = @{key = $key}
+					Headers = @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 				}
 				Invoke-RestMethod  @params | 
 					Add-Member -MemberType NoteProperty -Name 'error' -Value '' -PassThru
@@ -192,7 +189,7 @@ function Get-GNIpQuickCheck {
 	> Get-GnIpQuickCheck -Ip $ip -Key $key
 	returns information about $ip
 	.Link 
-	https://developer.greynoise.io/reference/ip-lookup-1#quickcheck-1
+	https://docs.greynoise.io/reference/quickcheck-1
 	#>
 	[cmdletbinding()]
 	param(
@@ -213,7 +210,9 @@ function Get-GNIpQuickCheck {
 			'0x05' = 'This IP is commonly spoofed in Internet-scan activity'
 			'0x06' = 'This IP has been observed as noise, but this host belongs to a cloud provider where IPs can be cycled frequently'
 			'0x07' = 'This IP is invalid'
-			'0x08' = 'This IP was classified as noise, but has not been observed engaging in Internet-wide scans or attacks in over 60 days'
+			'0x08' = 'This IP was classified as noise, but has not been observed engaging in Internet-wide scans or attacks in over 90 days'
+			'0x09' = 'This IP was found in RIOT'
+            '0x10' = 'The IP has been observed by the GreyNoise sensor network and was found in RIOT'
 		}
 
 
@@ -221,13 +220,14 @@ function Get-GNIpQuickCheck {
 
 			$params = @{
 				Uri     = "https://api.greynoise.io/v2/noise/quick/$($Address.IPAddressToString)"
-				Headers = @{key = $key}
+				Headers = @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 			}
 			try {
 				$out =	Invoke-RestMethod @params
 			 [pscustomobject]@{
 					ip      = $address.IPAddressToString
 					noise   = $out.noise
+					riot    = $out.riot
 					code    = $out.code
 					codeMsg = $dict[$out.Code]
 				} 
@@ -235,6 +235,7 @@ function Get-GNIpQuickCheck {
 				[pscustomobject]@{
 					ip      = $address.IPAddressToString
 					noise   = 'N/A'
+					riot    = 'N/A'
 					code    = $out.code
 					codeMsg = $dict[$out.Code]
 				} 
@@ -261,7 +262,7 @@ function Get-GNMultiIpQuickCheck {
 	An IP delivered via this endpoint does not include "malicious" or "benign" categorizations
 	This API endpoint only checks against the last 60 days of Internet scanner data
 	.Link
-	https://developer.greynoise.io/reference/ip-lookup-1#postquickcheckmulti
+	https://docs.greynoise.io/reference/postquickcheckmulti
 	#>
 	[cmdletbinding()]
 	param(
@@ -282,13 +283,15 @@ function Get-GNMultiIpQuickCheck {
 			'0x05' = 'This IP is commonly spoofed in Internet-scan activity'
 			'0x06' = 'This IP has been observed as noise, but this host belongs to a cloud provider where IPs can be cycled frequently'
 			'0x07' = 'This IP is invalid'
-			'0x08' = 'This IP was classified as noise, but has not been observed engaging in Internet-wide scans or attacks in over 60 days'
+			'0x08' = 'This IP was classified as noise, but has not been observed engaging in Internet-wide scans or attacks in over 90 days'
+			'0x09' = 'This IP was found in RIOT'
+            '0x10' = 'The IP has been observed by the GreyNoise sensor network and was found in RIOT'
 		}
 
 		$params = @{
 			Body    = (@{ips = $Ips.IPAddressToString} | ConvertTo-Json)
 			Uri     = 'https://api.greynoise.io/v2/noise/multi/quick'
-			Headers = @{key = $Key}
+			Headers = @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 			Method  = 'POST'
 		}
 	
@@ -298,6 +301,7 @@ function Get-GNMultiIpQuickCheck {
 			[pscustomobject]@{
 				ip      = $output.ip
 				noise   = $output.noise
+				riot    = $output.riot
 				code    = $output.code
 				codeMsg = $dict[$output.Code]
 			} 
@@ -314,7 +318,7 @@ function Get-GNRiotIpLookup {
 	.Parameter Key
 	Specify the API key to use.
 	.Link
-	https://developer.greynoise.io/reference/ip-lookup-1#riotip
+	https://docs.greynoise.io/reference/riotip
 	.Example
 	> Get-GNRiotIpLookup -Ip $ip -key $key
 
@@ -334,7 +338,7 @@ function Get-GNRiotIpLookup {
 		foreach ($address in $Ip) {
 			$params = @{
 				Uri     = "https://api.greynoise.io/v2/riot/$($address.IPAddressToString)"
-				Headers = @{key = $Key}
+				Headers = @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 			}
 			try {Invoke-RestMethod @params }
 			catch {
@@ -367,7 +371,7 @@ function Get-GNQLQuery {
 	.Parameter Scroll
 	Scroll token to paginate through results
 	.Link
-	https://developer.greynoise.io/reference/gnql-1#gnqlquery-1
+	https://docs.greynoise.io/reference/gnqlquery-1
 	.Example
 	> Get-GNQLQuery -GNQLQuery 'last_seen:today' -Key $key
 	returns information 
@@ -384,7 +388,7 @@ function Get-GNQLQuery {
 	$Uri = "https://api.greynoise.io/v2/experimental/gnql?query=$GNQLQuery&size=$Size"
 	if ($scroll) {$uri = "$uri&scroll=$scroll"}
 	$params = @{
-		Headers = @{key = $Key}
+		Headers = @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 		Uri     = $uri
 	}
 	Invoke-RestMethod @params
@@ -404,7 +408,7 @@ function Get-GNQLStats {
 	> Get-GNQLStats -Key $key -GNQLQuery '(raw_data.scan.port:445 and raw_data.scan.protocol:TCP) metadata.os:Windows*'
 	Returns information
 	.Link
-	https://developer.greynoise.io/reference/gnql-1#gnqlstats-1
+	https://docs.greynoise.io/reference/gnqlstats-1
 	#>
 	[cmdletbinding()]
 	param(
@@ -417,7 +421,7 @@ function Get-GNQLStats {
 	)
 	$Uri = "https://api.greynoise.io/v2/experimental/gnql/stats?query=$GNQLQuery&count=$count"
 	$params = @{
-		Headers = @{key = $Key}
+		Headers = @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 		Uri     = $uri
 	}
 	Invoke-RestMethod @params
@@ -433,7 +437,7 @@ function Get-GNTagMetadata {
 	> Get-GNTagMetadata -key $key
 	returns tags and their respective metadata
 	.Link
-	https://developer.greynoise.io/reference/metadata-2#metadata-3
+	https://docs.greynoise.io/reference/metadata-3
 	#>
 
 	[cmdletbinding()]
@@ -441,5 +445,5 @@ function Get-GNTagMetadata {
 		[parameter(Mandatory)]
 		$Key
 	)
-	Invoke-RestMethod -Uri 'https://api.greynoise.io/v2/meta/metadata' -Headers @{key = $Key}
+	Invoke-RestMethod -Uri 'https://api.greynoise.io/v2/meta/metadata' -Headers @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 }
