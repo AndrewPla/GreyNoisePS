@@ -26,7 +26,7 @@ function Get-GNIpInfo {
 	process {
 		foreach ($Address in $Ip) {
 			try {
-				$out = Invoke-RestMethod -Uri "https://api.greynoise.io/v3/community/$Address" -Headers {'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
+				$out = Invoke-RestMethod -Uri "https://api.greynoise.io/v3/community/$Address" -Headers @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 				
 				[pscustomobject]@{
 					ip             = $out.ip
@@ -116,7 +116,7 @@ function Get-GNMultiIpContext {
 		Method  = 'POST'
 		URI     = "https://api.greynoise.io/v2/noise/multi/context"
 		
-		Headers = {'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
+		Headers = @{'User-Agent' = 'AndrewPla-GreyNoisePS'; key = $Key}
 		Body    = (@{ips = $Ips.IPAddressToString} | ConvertTo-Json)
 	}
 
